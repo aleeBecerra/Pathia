@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendación de Cursos - PATHIA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 50px;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b35;
+            cursor: pointer;
+        }
+
+        .logo::before {
+            content: "❄";
+            font-size: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 50px;
+        }
+
+        .title {
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #ff6b35;
+        }
+
+        .controls {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .courses-selector {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .course-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .course-checkbox:hover {
+            background: rgba(255, 107, 53, 0.3);
+        }
+
+        .course-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .course-checkbox label {
+            margin: 0;
+            font-size: 14px;
+            font-weight: normal;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 200px;
+        }
+
+        .results h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ff6b35;
+        }
+
+        .stats-banner {
+            background: rgba(100, 100, 100, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .level-section {
+            margin-bottom: 30px;
+        }
+
+        .level-header {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .level-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .level-count {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .course-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .course-item {
+            background: linear-gradient(135deg, #c85a3f 0%, #b84830 100%);
+            padding: 20px;
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .course-item:hover {
+            transform: translateX(5px);
+        }
+
+        .course-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .course-info {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .no-results {
+            text-align: center;
+            font-size: 18px;
+            opacity: 0.7;
+            padding: 40px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+
+        .info-box {
+            background: rgba(255, 107, 53, 0.2);
+            border-left: 4px solid #ff6b35;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .select-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .select-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ff6b35;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .select-btn:hover {
+            background: rgba(255, 107, 53, 0.3);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .container {
+                padding: 0 30px;
+                margin: 30px auto;
+            }
+
+            .header {
+                padding: 20px 30px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .title {
+                font-size: 28px;
+            }
+
+            .controls, .courses-selector, .results {
+                padding: 20px;
+            }
+
+            .courses-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .course-list {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-banner {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 20px;
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .logo::before {
+                font-size: 32px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .controls, .courses-selector, .results {
+                padding: 20px;
+            }
+
+            label {
+                font-size: 16px;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+
+            .stats-banner {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+
+            .select-controls {
+                flex-direction: column;
+            }
+
+            .level-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="window.location.href='/?skip=1'">PATHIA</div>
+    </div>
+
+    <div class="container">
+        <a href="/?skip=1" class="back-btn">← Volver al inicio</a>
+
+        <h1 class="title">Recomendador de Cursos</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="carrera">Selecciona tu carrera:</label>
+                <select id="carrera">
+                    <option value="">Cargando carreras...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="courses-selector" id="coursesSelector">
+            <h2 style="color: #ff6b35; margin-bottom: 20px;">Selecciona los cursos que ya has aprobado:</h2>
+            
+            <div class="select-controls">
+                <button class="select-btn" onclick="selectAll()">Seleccionar Todos</button>
+                <button class="select-btn" onclick="deselectAll()">Deseleccionar Todos</button>
+            </div>
+
+            <div class="courses-grid" id="coursesGrid">
+                <!-- Cursos se cargarán aquí -->
+            </div>
+
+            <button onclick="buscarRecomendaciones()">Obtener Recomendaciones</button>
+        </div>
+
+        <div class="results" id="resultados">
+            <div class="info-box">
+                <strong>¿Cómo funciona?</strong>
+                <p>Selecciona tu carrera y marca los cursos que ya has aprobado. El sistema te recomendará los cursos que puedes matricular en base a tus prerrequisitos cumplidos.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cursosCarrera = {};
+
+        // Cargar carreras al iniciar
+        fetch('/api/carreras')
+            .then(response => response.json())
+            .then(data => {
+                const selectCarrera = document.getElementById('carrera');
+                selectCarrera.innerHTML = '<option value="">Selecciona una carrera</option>';
+                data.carreras.forEach(carrera => {
+                    const option = document.createElement('option');
+                    option.value = carrera;
+                    option.textContent = carrera;
+                    selectCarrera.appendChild(option);
+                });
+            });
+
+        // Cargar cursos cuando se selecciona una carrera
+        document.getElementById('carrera').addEventListener('change', function() {
+            const carrera = this.value;
+            if (!carrera) {
+                document.getElementById('coursesSelector').style.display = 'none';
+                return;
+            }
+
+            fetch(`/api/cursos/${encodeURIComponent(carrera)}`)
+                .then(response => response.json())
+                .then(data => {
+                    cursosCarrera = data.cursos;
+                    const grid = document.getElementById('coursesGrid');
+                    grid.innerHTML = '';
+                    
+                    // Convertir objeto a array y ordenar
+                    const cursosArray = Object.entries(data.cursos).map(([curso, nivel]) => ({
+                        nombre: curso,
+                        nivel: nivel
+                    }));
+                    
+                    // Ordenar por nivel y luego por nombre
+                    cursosArray.sort((a, b) => {
+                        const nivelA = parseInt(a.nivel.match(/\d+/)?.[0] || 0);
+                        const nivelB = parseInt(b.nivel.match(/\d+/)?.[0] || 0);
+                        if (nivelA !== nivelB) return nivelA - nivelB;
+                        return a.nombre.localeCompare(b.nombre);
+                    });
+                    
+                    cursosArray.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'course-checkbox';
+                        div.innerHTML = `
+                            <input type="checkbox" id="curso-${item.nombre}" value="${item.nombre}">
+                            <label for="curso-${item.nombre}">${item.nombre} (${item.nivel})</label>
+                        `;
+                        grid.appendChild(div);
+                    });
+
+                    document.getElementById('coursesSelector').style.display = 'block';
+                    
+                    console.log(`Total de cursos cargados: ${cursosArray.length}`);
+                })
+                .catch(error => {
+                    console.error('Error al cargar cursos:', error);
+                });
+        });
+
+        function selectAll() {
+            document.querySelectorAll('#coursesGrid input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('#coursesGrid input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+
+        function buscarRecomendaciones() {
+            const carrera = document.getElementById('carrera').value;
+            const resultados = document.getElementById('resultados');
+
+            if (!carrera) {
+                resultados.innerHTML = '<div class="no-results">Por favor selecciona una carrera</div>';
+                return;
+            }
+
+            // Obtener cursos aprobados
+            const cursosAprobados = [];
+            document.querySelectorAll('#coursesGrid input[type="checkbox"]:checked').forEach(cb => {
+                cursosAprobados.push(cb.value);
+            });
+
+            resultados.innerHTML = '<div class="loading">Calculando recomendaciones usando Algoritmo de Kahn...</div>';
+
+            fetch(`/api/recomendar/${encodeURIComponent(carrera)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cursos_aprobados: cursosAprobados
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultados.innerHTML = `<div class="no-results">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                let html = '<h2>Resultados</h2>';
+
+                // Estadísticas
+                const stats = data.estadisticas;
+                html += `
+                    <div class="stats-banner">
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.cursos_aprobados}</div>
+                            <div class="stat-label">Cursos Aprobados</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.progreso}%</div>
+                            <div class="stat-label">Progreso</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${data.total_disponibles}</div>
+                            <div class="stat-label">Cursos Disponibles</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${stats.cursos_pendientes}</div>
+                            <div class="stat-label">Cursos Pendientes</div>
+                        </div>
+                    </div>
+                `;
+
+                if (data.total_disponibles === 0) {
+                    html += '<div class="no-results">No hay cursos disponibles para matricular en este momento. Verifica tu progreso.</div>';
+                } else {
+                    // Mostrar cursos por nivel
+                    const niveles = Object.keys(data.por_nivel).sort((a, b) => {
+                        const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+                        const numB = parseInt(b.match(/\d+/)?.[0] || 0);
+                        return numA - numB;
+                    });
+
+                    niveles.forEach(nivel => {
+                        const cursos = data.por_nivel[nivel];
+                        html += `
+                            <div class="level-section">
+                                <div class="level-header">
+                                    <span class="level-title">${nivel}</span>
+                                    <span class="level-count">${cursos.length} curso${cursos.length !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="course-list">
+                        `;
+
+                        cursos.forEach(curso => {
+                            html += `
+                                <div class="course-item">
+                                    <div class="course-name">${curso.curso}</div>
+                                    <div class="course-info">${curso.nivel}</div>
+                                </div>
+                            `;
+                        });
+
+                        html += '</div></div>';
+                    });
+                }
+
+                resultados.innerHTML = html;
+            })
+            .catch(error => {
+                resultados.innerHTML = '<div class="no-results">Error al obtener recomendaciones</div>';
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PATHIA - Visualización de Grafo Curricular</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 50px;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b35;
+            cursor: pointer;
+        }
+
+        .logo::before {
+            content: "❄";
+            font-size: 40px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 50px;
+        }
+
+        .control-panel {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel h2 {
+            margin-bottom: 20px;
+            color: #ff6b35;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        select {
+            width: 100%;
+            max-width: 500px;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            background: white;
+            color: #333;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            color: white;
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .graph-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            height: 700px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-panel h3 {
+            color: #ff6b35;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin: 5px;
+        }
+
+        .badge-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .badge-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .orden-topologico {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .curso-item {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .legend {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .legend.active {
+            display: block;
+        }
+
+        .legend h3 {
+            color: #ff6b35;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .container {
+                padding: 0 30px;
+                margin: 30px auto;
+            }
+
+            .header {
+                padding: 20px 30px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .control-panel {
+                padding: 20px;
+            }
+
+            .graph-container {
+                height: 500px;
+            }
+
+            .legend-items {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 20px;
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .logo::before {
+                font-size: 32px;
+            }
+
+            .control-panel {
+                padding: 20px;
+            }
+
+            .control-panel h2 {
+                font-size: 20px;
+            }
+
+            .graph-container {
+                height: 400px;
+                padding: 10px;
+            }
+
+            .btn {
+                padding: 10px 30px;
+                font-size: 14px;
+            }
+
+            .legend-items {
+                grid-template-columns: 1fr;
+            }
+
+            .orden-topologico {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="window.location.href='/'">PATHIA</div>
+    </div>
+
+    <div class="container">
+        <a href="/?skip=1" class="back-btn">← Volver al inicio</a>
+
+        <div class="control-panel">
+            <h2>Visualización del Grafo Curricular</h2>
+            <div class="form-group">
+                <label for="carrera">Selecciona tu carrera:</label>
+                <select id="carrera">
+                    <option value="">-- Selecciona una carrera --</option>
+                    {% for carrera in carreras %}
+                    <option value="{{ carrera }}">{{ carrera }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="btn" onclick="visualizarGrafo()">Visualizar Grafo</button>
+        </div>
+
+        <div class="graph-container">
+            <div id="mynetwork"></div>
+        </div>
+
+        <div class="legend" id="legend">
+            <h3>Leyenda de Ciclos</h3>
+            <div class="legend-items" id="legendItems"></div>
+        </div>
+
+        <div class="info-panel" id="infoPanel" style="display: none;">
+            <h3>Información del Análisis</h3>
+            <div id="infoContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let network = null;
+        let allNodes = null;
+        let allEdges = null;
+
+        // Paleta de colores para los ciclos
+        const cicloColores = {
+            'Ciclo 1': { background: '#3498db', border: '#2980b9' },   // Azul
+            'Ciclo 2': { background: '#2ecc71', border: '#27ae60' },   // Verde
+            'Ciclo 3': { background: '#f39c12', border: '#e67e22' },   // Naranja
+            'Ciclo 4': { background: '#9b59b6', border: '#8e44ad' },   // Púrpura
+            'Ciclo 5': { background: '#1abc9c', border: '#16a085' },   // Turquesa
+            'Ciclo 6': { background: '#e74c3c', border: '#c0392b' },   // Rojo
+            'Ciclo 7': { background: '#34495e', border: '#2c3e50' },   // Gris oscuro
+            'Ciclo 8': { background: '#f1c40f', border: '#f39c12' },   // Amarillo
+            'Ciclo 9': { background: '#e91e63', border: '#c2185b' },   // Rosa
+            'Ciclo 10': { background: '#00bcd4', border: '#0097a7' },  // Cian
+            'Ciclo 11': { background: '#ff5722', border: '#e64a19' },  // Naranja profundo
+            'Ciclo 12': { background: '#673ab7', border: '#512da8' },  // Púrpura profundo
+            'Ciclo 13': { background: '#009688', border: '#00796b' },  // Verde azulado
+            'Ciclo 14': { background: '#795548', border: '#5d4037' },  // Marrón
+        };
+
+        function visualizarGrafo() {
+            const carrera = document.getElementById('carrera').value;
+            
+            if (!carrera) {
+                alert('Por favor selecciona una carrera');
+                return;
+            }
+
+            // Hacer petición a la API
+            fetch(`/api/grafo/${encodeURIComponent(carrera)}`)
+                .then(response => response.json())
+                .then(data => {
+                    mostrarGrafo(data);
+                    mostrarInformacion(data);
+                    mostrarLeyenda(data);
+                    // Mostrar leyenda
+                    document.getElementById('legend').classList.add('active');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al cargar el grafo');
+                });
+        }
+
+        function mostrarLeyenda(data) {
+            const nivelesUnicos = [...new Set(data.nodos.map(n => n.nivel))];
+            
+            // Ordenar correctamente los ciclos (extraer número y ordenar numéricamente)
+            nivelesUnicos.sort((a, b) => {
+                const numA = parseInt(a.match(/\d+/)[0]);
+                const numB = parseInt(b.match(/\d+/)[0]);
+                return numA - numB;
+            });
+            
+            const legendItems = document.getElementById('legendItems');
+            legendItems.innerHTML = '';
+
+            nivelesUnicos.forEach(nivel => {
+                const color = cicloColores[nivel] || { background: '#ff6b35', border: '#ff4b2b' };
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-color" style="background: ${color.background}; border-color: ${color.border};"></div>
+                    <span>${nivel}</span>
+                `;
+                legendItems.appendChild(item);
+            });
+        }
+
+        function mostrarGrafo(data) {
+            const container = document.getElementById('mynetwork');
+            
+            // Agrupar por nivel
+            const niveles = {};
+            data.nodos.forEach(nodo => {
+                if (!niveles[nodo.nivel]) {
+                    niveles[nodo.nivel] = [];
+                }
+                niveles[nodo.nivel].push(nodo);
+            });
+
+            // Ordenar niveles correctamente (extraer número y ordenar numéricamente)
+            const nivelesOrdenados = Object.keys(niveles).sort((a, b) => {
+                const numA = parseInt(a.match(/\d+/)[0]);
+                const numB = parseInt(b.match(/\d+/)[0]);
+                return numA - numB;
+            });
+            
+            const nodes = [];
+            
+            nivelesOrdenados.forEach((nivel, nivelIndex) => {
+                const nodosEnNivel = niveles[nivel];
+                const color = cicloColores[nivel] || { background: '#ff6b35', border: '#ff4b2b' };
+                
+                nodosEnNivel.forEach((nodo, index) => {
+                    nodes.push({
+                        id: nodo.id,
+                        label: nodo.label,
+                        title: `${nodo.label}\n${nodo.nivel}`,
+                        level: nivelIndex,
+                        nivel: nivel,
+                        color: {
+                            background: color.background,
+                            border: color.border,
+                            highlight: {
+                                background: color.border,
+                                border: '#fff'
+                            }
+                        },
+                        font: {
+                            color: 'white',
+                            size: 14,
+                            face: 'Segoe UI'
+                        },
+                        borderWidth: 2,
+                        borderWidthSelected: 4
+                    });
+                });
+            });
+
+            const edges = data.aristas.map(arista => ({
+                from: arista.from,
+                to: arista.to,
+                arrows: 'to',
+                color: {
+                    color: '#666',
+                    highlight: '#ff6b35'
+                },
+                smooth: {
+                    type: 'cubicBezier',
+                    forceDirection: 'vertical',
+                    roundness: 0.4
+                }
+            }));
+
+            const graphData = {
+                nodes: new vis.DataSet(nodes),
+                edges: new vis.DataSet(edges)
+            };
+
+            // Guardar referencias globales para búsqueda
+            allNodes = graphData.nodes;
+            allEdges = graphData.edges;
+
+            const options = {
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed',
+                        levelSeparation: 150,
+                        nodeSpacing: 200
+                    }
+                },
+                physics: {
+                    enabled: false
+                },
+                interaction: {
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true,
+                    hover: true
+                },
+                nodes: {
+                    shape: 'box',
+                    margin: 10,
+                    widthConstraint: {
+                        maximum: 200
+                    }
+                }
+            };
+
+            if (network) {
+                network.destroy();
+            }
+
+            network = new vis.Network(container, graphData, options);
+        }
+
+        function mostrarInformacion(data) {
+            const infoPanel = document.getElementById('infoPanel');
+            const infoContent = document.getElementById('infoContent');
+            
+            let html = '<div class="info-item">';
+            html += '<strong>Total de cursos:</strong> ' + data.nodos.length + '<br>';
+            html += '<strong>Total de conexiones:</strong> ' + data.aristas.length;
+            html += '</div>';
+
+            html += '<div class="info-item">';
+            if (data.tiene_ciclos) {
+                html += '<span class="badge badge-error">⚠ Se detectaron ciclos en el grafo</span><br>';
+                html += '<small>El grafo contiene dependencias circulares que deben ser revisadas.</small>';
+            } else {
+                html += '<span class="badge badge-success">✓ Grafo acíclico (válido)</span><br>';
+                html += '<small>No se detectaron ciclos. El orden de cursos es válido.</small>';
+            }
+            html += '</div>';
+
+            if (data.orden_topologico && data.orden_topologico.length > 0) {
+                html += '<div class="info-item">';
+                html += '<strong>Orden Topológico (Secuencia válida de cursos):</strong>';
+                html += '<div class="orden-topologico">';
+                data.orden_topologico.forEach((curso, index) => {
+                    html += `<div class="curso-item">${index + 1}. ${curso}</div>`;
+                });
+                html += '</div>';
+                html += '</div>';
+            }
+
+            infoContent.innerHTML = html;
+            infoPanel.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

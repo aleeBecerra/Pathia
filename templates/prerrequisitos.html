@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prerrequisitos - PATHIA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 50px;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b35;
+            cursor: pointer;
+        }
+
+        .logo::before {
+            content: "❄";
+            font-size: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 50px;
+        }
+
+        .title {
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #ff6b35;
+        }
+
+        .controls {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        select {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            grid-column: span 2;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .results {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 200px;
+        }
+
+        .results h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ff6b35;
+        }
+
+        .course-info-banner {
+            background: rgba(100, 100, 100, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .course-info-banner h3 {
+            font-size: 28px;
+            color: #ff6b35;
+            margin-bottom: 5px;
+        }
+
+        .course-info-banner p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .prereq-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .prereq-item {
+            background: linear-gradient(135deg, #c85a3f 0%, #b84830 100%);
+            padding: 20px;
+            border-radius: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .prereq-item:hover {
+            transform: translateX(5px);
+        }
+
+        .prereq-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .prereq-level {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .no-results {
+            text-align: center;
+            font-size: 18px;
+            opacity: 0.7;
+            padding: 40px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+
+        .info-box {
+            background: rgba(255, 107, 53, 0.2);
+            border-left: 4px solid #ff6b35;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .no-prereqs {
+            background: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid #2ecc71;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .no-prereqs h3 {
+            color: #2ecc71;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .no-prereqs p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .container {
+                padding: 0 30px;
+                margin: 30px auto;
+            }
+
+            .header {
+                padding: 20px 30px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .title {
+                font-size: 28px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            button {
+                grid-column: span 1;
+            }
+
+            .prereq-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 20px;
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .logo::before {
+                font-size: 32px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .controls {
+                padding: 20px;
+            }
+
+            label {
+                font-size: 16px;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+
+            .results {
+                padding: 20px;
+            }
+
+            .course-info-banner h3 {
+                font-size: 22px;
+            }
+
+            .prereq-name {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="window.location.href='/?skip=1'">PATHIA</div>
+    </div>
+
+    <div class="container">
+        <a href="/?skip=1" class="back-btn">← Volver al inicio</a>
+
+        <h1 class="title">Consulta de Prerrequisitos</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="carrera">Selecciona tu carrera:</label>
+                <select id="carrera">
+                    <option value="">Cargando carreras...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="curso">Selecciona un curso:</label>
+                <select id="curso">
+                    <option value="">Primero selecciona una carrera</option>
+                </select>
+            </div>
+
+            <button onclick="buscarPrerrequisitos()">Buscar Prerrequisitos</button>
+        </div>
+
+        <div class="results" id="resultados">
+            <div class="info-box">
+                <strong>¿Cómo funciona?</strong>
+                <p>Selecciona tu carrera y un curso. Te mostraremos todos los cursos que necesitas aprobar antes de poder llevar el curso seleccionado.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cursosCarrera = {};
+
+        // Cargar carreras al iniciar
+        fetch('/api/carreras')
+            .then(response => response.json())
+            .then(data => {
+                const selectCarrera = document.getElementById('carrera');
+                selectCarrera.innerHTML = '<option value="">Selecciona una carrera</option>';
+                data.carreras.forEach(carrera => {
+                    const option = document.createElement('option');
+                    option.value = carrera;
+                    option.textContent = carrera;
+                    selectCarrera.appendChild(option);
+                });
+            });
+
+        // Cargar cursos cuando se selecciona una carrera
+        document.getElementById('carrera').addEventListener('change', function() {
+            const carrera = this.value;
+            if (!carrera) {
+                document.getElementById('curso').innerHTML = '<option value="">Primero selecciona una carrera</option>';
+                return;
+            }
+
+            fetch(`/api/cursos/${encodeURIComponent(carrera)}`)
+                .then(response => response.json())
+                .then(data => {
+                    cursosCarrera = data.cursos;
+                    const selectCurso = document.getElementById('curso');
+                    selectCurso.innerHTML = '<option value="">Selecciona un curso</option>';
+                    
+                    const cursosOrdenados = Object.keys(data.cursos).sort();
+                    cursosOrdenados.forEach(curso => {
+                        const option = document.createElement('option');
+                        option.value = curso;
+                        option.textContent = curso;
+                        selectCurso.appendChild(option);
+                    });
+                });
+        });
+
+        function buscarPrerrequisitos() {
+            const carrera = document.getElementById('carrera').value;
+            const curso = document.getElementById('curso').value;
+            const resultados = document.getElementById('resultados');
+
+            if (!carrera || !curso) {
+                resultados.innerHTML = '<div class="no-results">Por favor selecciona una carrera y un curso</div>';
+                return;
+            }
+
+            resultados.innerHTML = '<div class="loading">Buscando prerrequisitos...</div>';
+
+            fetch(`/api/prerrequisitos/${encodeURIComponent(carrera)}/${encodeURIComponent(curso)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        resultados.innerHTML = `<div class="no-results">Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    let html = '<h2>Resultados</h2>';
+                    
+                    // Banner con información del curso
+                    html += `
+                        <div class="course-info-banner">
+                            <h3>${data.curso}</h3>
+                            <p>${data.nivel_curso || 'Nivel no disponible'}</p>
+                        </div>
+                    `;
+
+                    if (!data.tiene_prerrequisitos || data.total === 0) {
+                        let mensajeExtra = '';
+                        if (data.mensaje_especial) {
+                            mensajeExtra = `<p style="margin-top: 15px; padding: 15px; background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; border-radius: 5px;">${data.mensaje_especial}</p>`;
+                        }
+                        
+                        html += `
+                            <div class="no-prereqs">
+                                <h3>✓ Sin Prerrequisitos de Cursos</h3>
+                                <p>Este curso NO requiere haber aprobado cursos específicos previamente.</p>
+                                ${mensajeExtra}
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div style="margin-bottom: 15px;">
+                                <strong style="font-size: 18px;">Necesitas aprobar ${data.total} curso${data.total !== 1 ? 's' : ''} antes:</strong>
+                            </div>
+                            <div class="prereq-list">
+                        `;
+
+                        data.prerrequisitos.forEach(prereq => {
+                            html += `
+                                <div class="prereq-item">
+                                    <div class="prereq-name">${prereq.curso}</div>
+                                    <div class="prereq-level">${prereq.nivel}</div>
+                                </div>
+                            `;
+                        });
+
+                        html += '</div>';
+                    }
+
+                    resultados.innerHTML = html;
+                })
+                .catch(error => {
+                    resultados.innerHTML = '<div class="no-results">Error al buscar los prerrequisitos</div>';
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PATHIA - Sistema de Gestión Curricular</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 50px;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff6b35;
+        }
+
+        .logo::before {
+            content: "❄";
+            font-size: 40px;
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .welcome-screen h1 {
+            font-size: 56px;
+            margin-bottom: 20px;
+            color: #ff6b35;
+            animation: fadeInDown 1s ease;
+        }
+
+        .welcome-screen p {
+            font-size: 24px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease 0.3s both;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            color: white;
+            padding: 20px 60px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease 0.6s both;
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .start-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(255, 107, 53, 0.5);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 50px;
+        }
+
+        .container.show {
+            display: grid;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+                margin: 40px auto;
+                padding: 0 30px;
+            }
+
+            .header {
+                padding: 20px 30px;
+            }
+
+            .logo {
+                font-size: 28px;
+            }
+
+            .welcome-screen h1 {
+                font-size: 40px;
+            }
+
+            .welcome-screen p {
+                font-size: 20px;
+            }
+
+            .start-button {
+                padding: 15px 40px;
+                font-size: 18px;
+            }
+
+            .card {
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .logo::before {
+                font-size: 32px;
+            }
+
+            .welcome-screen {
+                padding: 30px 20px;
+            }
+
+            .welcome-screen h1 {
+                font-size: 32px;
+            }
+
+            .welcome-screen p {
+                font-size: 18px;
+            }
+
+            .start-button {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+
+            .container {
+                padding: 0 20px;
+                margin: 30px auto;
+            }
+
+            .card {
+                padding: 25px;
+            }
+
+            .card-content {
+                padding: 20px;
+                min-height: 120px;
+            }
+
+            .card-content h2 {
+                font-size: 16px;
+            }
+
+            .card-button {
+                padding: 10px 30px;
+                font-size: 14px;
+            }
+        }
+
+        .card {
+            background: rgba(60, 40, 30, 0.8);
+            border-radius: 20px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .card-content {
+            background: linear-gradient(135deg, #c85a3f 0%, #b84830 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .card-content h2 {
+            font-size: 18px;
+            line-height: 1.5;
+            font-weight: normal;
+        }
+
+        .card-button {
+            background: white;
+            color: #333;
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card-button:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .card.active .card-button {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff4b2b 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">PATHIA</div>
+    </div>
+
+    <div class="welcome-screen" id="welcomeScreen">
+        <h1>¡Bienvenido a PATHIA!</h1>
+        <p>Tu sistema inteligente de gestión curricular</p>
+        <button class="start-button" onclick="empezar()">Empezar</button>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <div class="card active" onclick="window.location.href='/grafo'">
+            <div class="card-content">
+                <h2>Observa un grafo con los cursos de tu carrera</h2>
+            </div>
+            <button class="card-button">Grafo</button>
+        </div>
+
+        <div class="card active" onclick="window.location.href='/recomendacion'">
+            <div class="card-content">
+                <h2>Visualice los cursos que puede llevar en relación al ciclo en el que se encuentre</h2>
+            </div>
+            <button class="card-button">Recomendación</button>
+        </div>
+
+        <div class="card active" onclick="window.location.href='/prerrequisitos'">
+            <div class="card-content">
+                <h2>Consulte que cursos necesita aprobar para llevar algún curso en específico</h2>
+            </div>
+            <button class="card-button">Prerrequisitos</button>
+        </div>
+
+        <div class="card active" onclick="window.location.href='/desbloqueados'">
+            <div class="card-content">
+                <h2>Consulte que cursos se desbloquea luego de aprobar un curso en específico</h2>
+            </div>
+            <button class="card-button">Desbloqueados</button>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si hay parámetro skip en la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('skip') === '1') {
+            // Ir directo a las opciones
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('mainContainer').classList.add('show');
+        }
+
+        function empezar() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('mainContainer').classList.add('show');
+        }
+    </script>
+</body>
+</html>
