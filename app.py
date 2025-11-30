@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 class GrafoCurricular:
     def __init__(self):
-        self.grafo = defaultdict(list)  # grafo global
-        self.cursos = {}  # clave: (curso, carrera), valor: info del curso
+        self.grafo = defaultdict(list)
+        self.cursos = {}
         self.carreras = set()
         
     def cargar_csv(self, archivo_csv):
@@ -18,67 +18,83 @@ class GrafoCurricular:
             lines = file.readlines()
             
             for i, line in enumerate(lines):
-                if i == 0:  # Saltar encabezado
+                if i == 0:
                     continue
                 
                 line = line.strip()
                 if not line:
                     continue
                 
-                # Extraer TODOS los valores entre comillas
                 valores = re.findall(r'"([^"]*)"', line)
                 
-                if len(valores) < 4:
+                if len(valores) < 5:
                     continue
                 
-                # El primero es curso, los últimos 2 son nivel y carrera
                 curso = valores[0].strip()
+                creditos = valores[1].strip()
                 nivel = valores[-2].strip()
                 carrera = valores[-1].strip()
                 
-                # Los prerrequisitos son todos los valores del medio
-                if len(valores) == 4:
-                    # Caso simple: solo 1 prerrequisito
-                    prerrequisitos_campo = valores[1].strip()
-                    prereqs_lista = [valores[1].strip()] if valores[1].strip().lower() != 'ninguno' else []
-                else:
-                    # Múltiples prerrequisitos
-                    prerrequisitos_campo = ' '.join(valores[1:-2])
-                    prereqs_lista = [v.strip() for v in valores[1:-2]]
+                # Extraer prerrequisitos
+                raw_prereqs = valores[2:-2]
                 
-                # Guardar información del curso con clave compuesta (curso, carrera)
+                prereqs_lista = []
+                for p in raw_prereqs:
+                    p_limpio = p.strip()
+                    if p_limpio and p_limpio.lower() != 'ninguno':
+                        prereqs_lista.append(p_limpio)
+                
+                prerrequisitos_campo = ','.join(prereqs_lista) if prereqs_lista else 'Ninguno'
+                
+                # Guardar información del curso
                 clave = (curso, carrera)
                 self.cursos[clave] = {
                     'curso': curso,
+                    'creditos': int(creditos) if creditos.isdigit() else 0,
                     'nivel': nivel,
                     'carrera': carrera,
                     'prerrequisitos': prerrequisitos_campo
                 }
-                
-                # Agregar carrera al conjunto (solo si no está vacía)
+
                 if carrera and carrera.strip() and carrera.strip() != ',':
                     self.carreras.add(carrera)
                 
-                # Construir grafo dirigido (prerrequisito -> curso) dentro de la misma carrera
+                # Construir grafo solo con prerrequisitos de cursos (no créditos)
                 for prereq in prereqs_lista:
-                    prereq = prereq.strip()
-                    if prereq and prereq.lower() != 'ninguno':
-                        # Usar clave compuesta para el grafo también
+                    # Ignorar si es un requisito de créditos
+                    if not self._es_requisito_creditos(prereq):
                         prereq_key = (prereq, carrera)
                         self.grafo[prereq_key].append(clave)
     
+    def _es_requisito_creditos(self, texto):
+        """Detecta si un texto es un requisito de créditos"""
+        texto_lower = texto.lower()
+        patrones = [
+            r'\d+\s*credito',
+            r'credito.*\d+',
+            r'\d+\s*cr[eé]dito'
+        ]
+        for patron in patrones:
+            if re.search(patron, texto_lower):
+                return True
+        return False
+    
+    def _extraer_creditos_requeridos(self, texto):
+        """Extrae la cantidad de créditos requeridos de un texto"""
+        match = re.search(r'(\d+)\s*cr[eé]dito', texto.lower())
+        if match:
+            return int(match.group(1))
+        return 0
+    
     def filtrar_por_carrera(self, carrera):
         """Filtra el grafo por carrera específica"""
-        # Filtrar cursos por carrera (clave es (curso, carrera))
         cursos_carrera = {clave: info for clave, info in self.cursos.items() 
                          if clave[1] == carrera}
         
         grafo_carrera = defaultdict(list)
-        # Incluir TODOS los cursos de la carrera
         for clave in cursos_carrera:
             grafo_carrera[clave] = []
         
-        # Agregar las conexiones entre cursos de la misma carrera
         for clave in cursos_carrera:
             if clave in self.grafo:
                 grafo_carrera[clave] = [c for c in self.grafo[clave] 
@@ -126,26 +142,22 @@ class GrafoCurricular:
     
     def ordenamiento_topologico(self, cursos_carrera, grafo_carrera):
         """Implementa ordenamiento topológico usando algoritmo de Kahn"""
-        # Calcular grado de entrada para cada nodo
         grado_entrada = {curso: 0 for curso in cursos_carrera}
         
         for curso in grafo_carrera:
             for vecino in grafo_carrera[curso]:
                 grado_entrada[vecino] += 1
         
-        # Para nodos sin prerrequisitos
         for curso in cursos_carrera:
             prereqs = cursos_carrera[curso]['prerrequisitos']
             if prereqs.lower() == 'ninguno' and curso not in grado_entrada:
                 grado_entrada[curso] = 0
         
-        # Cola con nodos sin dependencias
         cola = deque([curso for curso, grado in grado_entrada.items() if grado == 0])
         orden = []
         
         while cola:
             nodo = cola.popleft()
-            # Extraer solo el nombre del curso (nodo es una tupla (curso, carrera))
             orden.append(nodo[0] if isinstance(nodo, tuple) else nodo)
             
             if nodo in grafo_carrera:
@@ -158,37 +170,30 @@ class GrafoCurricular:
 
 # Inicializar grafo
 grafo_global = GrafoCurricular()
-grafo_global.cargar_csv('datasetvf_1.txt')
+grafo_global.cargar_csv('DatabaseG9_vf.txt')
 
 @app.route('/')
 def index():
-    """Página principal con las 4 opciones"""
     return render_template('index.html')
 
 @app.route('/grafo')
 def grafo():
-    """Página para visualizar el grafo"""
     carreras = list(grafo_global.carreras)
     return render_template('grafo.html', carreras=carreras)
 
 @app.route('/api/grafo/<carrera>')
 def api_grafo(carrera):
-    """API para obtener datos del grafo de una carrera"""
     cursos_carrera, grafo_carrera = grafo_global.filtrar_por_carrera(carrera)
     
-    # Verificar ciclos
     tiene_ciclos = grafo_global.detectar_ciclos(grafo_carrera)
     
-    # Ordenamiento topológico
     orden_topologico = None
     if not tiene_ciclos:
         orden_topologico = grafo_global.ordenamiento_topologico(cursos_carrera, grafo_carrera)
     
-    # Preparar datos para visualización
-    # clave es (curso, carrera), extraer solo el nombre del curso
     nodos = []
     for clave, info in cursos_carrera.items():
-        curso_nombre = clave[0]  # Extraer nombre del curso de la tupla
+        curso_nombre = clave[0]
         nodos.append({
             'id': curso_nombre,
             'label': curso_nombre,
@@ -196,12 +201,11 @@ def api_grafo(carrera):
             'carrera': info['carrera']
         })
     
-    # Crear aristas usando el grafo ya construido
     aristas = []
     for prereq_key, cursos_siguientes in grafo_carrera.items():
-        prereq_nombre = prereq_key[0]  # Extraer nombre del prerrequisito
+        prereq_nombre = prereq_key[0]
         for curso_key in cursos_siguientes:
-            curso_nombre = curso_key[0]  # Extraer nombre del curso
+            curso_nombre = curso_key[0]
             aristas.append({
                 'from': prereq_nombre,
                 'to': curso_nombre
@@ -216,13 +220,10 @@ def api_grafo(carrera):
 
 @app.route('/desbloqueados')
 def desbloqueados():
-    """Página para consultar cursos desbloqueados"""
     return render_template('desbloqueados.html')
 
 @app.route('/api/carreras')
 def api_carreras():
-    """API para obtener lista de carreras"""
-    # Filtrar carreras vacías o que solo contengan espacios/comas
     carreras_validas = [c for c in grafo_global.carreras if c and c.strip() and c.strip() != ',']
     return jsonify({
         'carreras': sorted(carreras_validas)
@@ -230,14 +231,15 @@ def api_carreras():
 
 @app.route('/api/cursos/<carrera>')
 def api_cursos_carrera(carrera):
-    """Obtener cursos de una carrera específica"""
     cursos_carrera, _ = grafo_global.filtrar_por_carrera(carrera)
     
-    # Crear diccionario simple: curso_nombre -> nivel
     cursos_dict = {}
     for clave, info in cursos_carrera.items():
         curso_nombre = clave[0]
-        cursos_dict[curso_nombre] = info['nivel']
+        cursos_dict[curso_nombre] = {
+            'nivel': info['nivel'],
+            'creditos': info['creditos']
+        }
     
     return jsonify({
         'cursos': cursos_dict
@@ -245,32 +247,27 @@ def api_cursos_carrera(carrera):
 
 @app.route('/api/desbloqueados/<carrera>/<curso>')
 def api_desbloqueados(carrera, curso):
-    """API para obtener cursos que se desbloquean al aprobar un curso (por niveles)"""
     cursos_carrera, grafo_carrera = grafo_global.filtrar_por_carrera(carrera)
     
-    # Buscar la clave del curso seleccionado
     curso_key = (curso, carrera)
     
-    # BFS para obtener cursos por niveles
     desbloqueados_por_nivel = {}
     total_desbloqueados = 0
     
     if curso_key in grafo_carrera:
         from collections import deque
         
-        cola = deque([(curso_key, 0)])  # (nodo, nivel)
+        cola = deque([(curso_key, 0)])
         visitados = {curso_key}
         
         while cola:
             nodo_actual, nivel_actual = cola.popleft()
             
-            # Obtener vecinos del nodo actual
             if nodo_actual in grafo_carrera:
                 for vecino_key in grafo_carrera[nodo_actual]:
                     if vecino_key not in visitados:
                         visitados.add(vecino_key)
                         
-                        # Agregar al nivel correspondiente
                         nivel = nivel_actual + 1
                         if nivel not in desbloqueados_por_nivel:
                             desbloqueados_por_nivel[nivel] = []
@@ -302,106 +299,58 @@ def prerrequisitos():
 
 @app.route('/api/prerrequisitos/<carrera>/<path:curso>')
 def api_prerrequisitos(carrera, curso):
-    """
-    Obtener los prerrequisitos inmediatos de un curso.
-    Usa búsqueda directa en la estructura del grafo.
-    """
     try:
-        # Filtrar cursos por carrera
         cursos_carrera, _ = grafo_global.filtrar_por_carrera(carrera)
-        
-        # Buscar el curso (normalizado, case-insensitive)
+
         curso_key = None
-        curso_encontrado = None
-        
+        info_curso = None
+
         for clave, info in cursos_carrera.items():
             if clave[0].lower() == curso.lower():
                 curso_key = clave
-                curso_encontrado = clave[0]
+                info_curso = info
                 break
-        
+
         if not curso_key:
             return jsonify({'error': 'Curso no encontrado en esta carrera'}), 404
-        
-        # Obtener prerrequisitos del curso
-        info_curso = cursos_carrera[curso_key]
-        prereqs_str = info_curso['prerrequisitos']
-        
-        # Verificar si es un prerrequisito especial (créditos, etc.)
-        requisitos_especiales = ['credito', 'creditos', 'aprobado', 'director', 'ingles', 'todos los cursos']
-        es_requisito_especial = any(palabra in prereqs_str.lower() for palabra in requisitos_especiales)
-        
-        if not prereqs_str or prereqs_str.lower() == 'ninguno' or es_requisito_especial:
-            mensaje_especial = None
-            if es_requisito_especial:
-                mensaje_especial = f"Este curso tiene un requisito especial: {prereqs_str}"
-            
-            return jsonify({
-                'curso': curso_encontrado,
-                'tiene_prerrequisitos': False,
-                'prerrequisitos': [],
-                'total': 0,
-                'nivel_curso': info_curso['nivel'],
-                'mensaje_especial': mensaje_especial
-            })
-        
-        # Parsear prerrequisitos
-        prereqs_list = []
-        
-        # Primero intentar extraer por comillas (formato: "prereq1" "prereq2")
-        prereqs_quoted = re.findall(r'"([^"]+)"', prereqs_str)
-        if prereqs_quoted:
-            prereqs_list = [p.strip() for p in prereqs_quoted if p.strip() and p.strip().lower() != 'ninguno']
-        else:
-            # Si no hay comillas, buscar coincidencias con los cursos de la carrera
-            prereqs_list = []
-            texto_restante = prereqs_str
-            
-            # Obtener todos los nombres de cursos de la carrera
-            nombres_cursos = [k[0] for k in cursos_carrera.keys()]
-            # Ordenar por longitud descendente para buscar primero los nombres más largos
-            nombres_cursos.sort(key=len, reverse=True)
-            
-            # Buscar cada nombre de curso en el texto de prerrequisitos
-            for nombre_curso in nombres_cursos:
-                if nombre_curso.lower() in texto_restante.lower():
-                    prereqs_list.append(nombre_curso)
-                    # Remover el curso encontrado del texto para evitar duplicados
-                    texto_restante = texto_restante.lower().replace(nombre_curso.lower(), '', 1)
-        
-        # Obtener información completa de cada prerrequisito
+
+        raw_str = info_curso['prerrequisitos'].strip()
         prerrequisitos_info = []
-        for prereq in prereqs_list:
-            prereq_key = (prereq, carrera)
-            if prereq_key in cursos_carrera:
-                prereq_info = cursos_carrera[prereq_key]
-                prerrequisitos_info.append({
-                    'curso': prereq,
-                    'nivel': prereq_info['nivel']
-                })
-            else:
-                # Si no se encuentra, agregarlo sin nivel
-                prerrequisitos_info.append({
-                    'curso': prereq,
+
+        if raw_str and raw_str.lower() != "ninguno":
+            lista_prereqs = [p.strip() for p in raw_str.split(',') if p.strip()]
+
+            for prereq_nombre in lista_prereqs:
+                prereq_key = (prereq_nombre, carrera)
+                
+                datos_prereq = {
+                    'curso': prereq_nombre,
                     'nivel': 'N/A'
-                })
-        
+                }
+
+                if prereq_key in cursos_carrera:
+                    datos_prereq['nivel'] = cursos_carrera[prereq_key]['nivel']
+                
+                prerrequisitos_info.append(datos_prereq)
+
         return jsonify({
-            'curso': curso_encontrado,
-            'tiene_prerrequisitos': True,
+            'curso': curso_key[0],
+            'tiene_prerrequisitos': len(prerrequisitos_info) > 0,
             'prerrequisitos': prerrequisitos_info,
             'total': len(prerrequisitos_info),
             'nivel_curso': info_curso['nivel']
         })
-    
+
     except Exception as e:
+        print(f"Error en api_prerrequisitos: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/recomendar/<carrera>', methods=['POST'])
 def api_recomendar(carrera):
     """
-    Recomendador inteligente usando Algoritmo de Kahn modificado.
-    Recibe los cursos aprobados y retorna los cursos disponibles para matricular.
+    Recomendador inteligente mejorado con soporte de créditos.
+    Usa Algoritmo de Kahn modificado + validación de créditos acumulados.
     """
     try:
         data = request.get_json()
@@ -413,50 +362,83 @@ def api_recomendar(carrera):
         if not cursos_carrera:
             return jsonify({'error': 'No se encontraron cursos para esta carrera'}), 404
         
-        # Aplicar Algoritmo de Kahn modificado
-        # Calcular grado de entrada para cada curso (excluyendo cursos aprobados)
+        # 1. CALCULAR CRÉDITOS ACUMULADOS
+        creditos_acumulados = 0
+        for curso_nombre in cursos_aprobados:
+            curso_key = (curso_nombre, carrera)
+            if curso_key in cursos_carrera:
+                creditos_acumulados += cursos_carrera[curso_key]['creditos']
+        
+        # 2. APLICAR ALGORITMO DE KAHN MODIFICADO
         grado_entrada = {}
         
-        # Inicializar grados de entrada para todos los cursos NO aprobados
+        # Inicializar grados para cursos NO aprobados
         for curso_key in cursos_carrera.keys():
             curso_nombre = curso_key[0]
             if curso_nombre not in cursos_aprobados:
                 grado_entrada[curso_nombre] = 0
         
-        # Calcular grados de entrada basados en prerrequisitos NO aprobados
+        # Calcular grados basados en prerrequisitos de CURSOS no aprobados
         for curso_key, info in cursos_carrera.items():
             curso_nombre = curso_key[0]
             
-            # Si el curso ya está aprobado, no lo consideramos
             if curso_nombre in cursos_aprobados:
                 continue
             
-            # Contar cuántos prerrequisitos NO aprobados tiene
             prereqs_str = info['prerrequisitos']
             if prereqs_str and prereqs_str.lower() != 'ninguno':
                 prereq_list = [p.strip() for p in prereqs_str.split(',')]
                 for prereq in prereq_list:
-                    # Solo contar si el prerrequisito NO está aprobado
-                    if prereq not in cursos_aprobados:
-                        # Verificar que el prerrequisito existe en la carrera
-                        prereq_key = (prereq, carrera)
-                        if prereq_key in cursos_carrera:
-                            grado_entrada[curso_nombre] += 1
+                    # Solo contar prerrequisitos de CURSOS (ignorar créditos aquí)
+                    if not grafo_global._es_requisito_creditos(prereq):
+                        if prereq not in cursos_aprobados:
+                            prereq_key = (prereq, carrera)
+                            if prereq_key in cursos_carrera:
+                                grado_entrada[curso_nombre] += 1
         
-        # Los cursos disponibles son aquellos con grado de entrada 0
+        # 3. IDENTIFICAR CURSOS CON GRADO 0 (Candidatos)
+        candidatos = [curso for curso, grado in grado_entrada.items() if grado == 0]
+        
+        # 4. FILTRAR POR REQUISITOS DE CRÉDITOS
         cursos_disponibles = []
-        for curso_nombre, grado in grado_entrada.items():
-            if grado == 0:
-                curso_key = (curso_nombre, carrera)
-                if curso_key in cursos_carrera:
-                    info = cursos_carrera[curso_key]
-                    cursos_disponibles.append({
-                        'curso': curso_nombre,
-                        'nivel': info['nivel'],
-                        'prerrequisitos': info['prerrequisitos']
-                    })
+        cursos_bloqueados_por_creditos = []
         
-        # Agrupar por ciclo/nivel
+        for curso_nombre in candidatos:
+            curso_key = (curso_nombre, carrera)
+            if curso_key not in cursos_carrera:
+                continue
+                
+            info = cursos_carrera[curso_key]
+            prereqs_str = info['prerrequisitos']
+            
+            # Verificar si tiene requisito de créditos
+            creditos_necesarios = 0
+            cumple_creditos = True
+            
+            if prereqs_str and prereqs_str.lower() != 'ninguno':
+                prereq_list = [p.strip() for p in prereqs_str.split(',')]
+                for prereq in prereq_list:
+                    if grafo_global._es_requisito_creditos(prereq):
+                        creditos_necesarios = grafo_global._extraer_creditos_requeridos(prereq)
+                        if creditos_acumulados < creditos_necesarios:
+                            cumple_creditos = False
+                        break
+            
+            curso_info = {
+                'curso': curso_nombre,
+                'nivel': info['nivel'],
+                'creditos': info['creditos'],
+                'prerrequisitos': info['prerrequisitos'],
+                'creditos_necesarios': creditos_necesarios
+            }
+            
+            if cumple_creditos:
+                cursos_disponibles.append(curso_info)
+            else:
+                curso_info['creditos_faltantes'] = creditos_necesarios - creditos_acumulados
+                cursos_bloqueados_por_creditos.append(curso_info)
+        
+        # 5. AGRUPAR POR NIVEL
         por_nivel = {}
         for curso in cursos_disponibles:
             nivel = curso['nivel']
@@ -464,24 +446,34 @@ def api_recomendar(carrera):
                 por_nivel[nivel] = []
             por_nivel[nivel].append(curso)
         
-        # Estadísticas
+        # 6. ESTADÍSTICAS
         total_cursos = len(cursos_carrera)
         cursos_completados = len(cursos_aprobados)
         progreso = (cursos_completados / total_cursos * 100) if total_cursos > 0 else 0
         
+        # Calcular créditos totales de la carrera
+        creditos_totales = sum(info['creditos'] for info in cursos_carrera.values())
+        progreso_creditos = (creditos_acumulados / creditos_totales * 100) if creditos_totales > 0 else 0
+        
         return jsonify({
             'cursos_disponibles': cursos_disponibles,
+            'cursos_bloqueados_por_creditos': cursos_bloqueados_por_creditos,
             'por_nivel': por_nivel,
             'total_disponibles': len(cursos_disponibles),
+            'total_bloqueados_por_creditos': len(cursos_bloqueados_por_creditos),
             'estadisticas': {
                 'total_cursos': total_cursos,
                 'cursos_aprobados': cursos_completados,
                 'progreso': round(progreso, 1),
-                'cursos_pendientes': total_cursos - cursos_completados
+                'cursos_pendientes': total_cursos - cursos_completados,
+                'creditos_acumulados': creditos_acumulados,
+                'creditos_totales': creditos_totales,
+                'progreso_creditos': round(progreso_creditos, 1)
             }
         })
     
     except Exception as e:
+        print(f"Error en api_recomendar: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

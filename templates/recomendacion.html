@@ -174,7 +174,7 @@
             border-radius: 10px;
             margin-bottom: 20px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
         }
 
@@ -338,7 +338,7 @@
             }
 
             .stats-banner {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
             }
         }
 
@@ -470,33 +470,34 @@
                     cursosCarrera = data.cursos;
                     const grid = document.getElementById('coursesGrid');
                     grid.innerHTML = '';
-                    
+    
                     // Convertir objeto a array y ordenar
-                    const cursosArray = Object.entries(data.cursos).map(([curso, nivel]) => ({
-                        nombre: curso,
-                        nivel: nivel
-                    }));
-                    
-                    // Ordenar por nivel y luego por nombre
-                    cursosArray.sort((a, b) => {
-                        const nivelA = parseInt(a.nivel.match(/\d+/)?.[0] || 0);
-                        const nivelB = parseInt(b.nivel.match(/\d+/)?.[0] || 0);
-                        if (nivelA !== nivelB) return nivelA - nivelB;
-                        return a.nombre.localeCompare(b.nombre);
+                    const cursosArray = Object.entries(data.cursos).map(([curso, details]) => ({
+                    nombre: curso,
+                    nivel: details.nivel,
+                    creditos: details.creditos
+                 }));
+    
+                 // Ordenar por nivel y luego por nombre
+                   cursosArray.sort((a, b) => {
+                   const nivelA = parseInt(a.nivel.match(/\d+/)?.[0] || 0);
+                   const nivelB = parseInt(b.nivel.match(/\d+/)?.[0] || 0);
+                    if (nivelA !== nivelB) return nivelA - nivelB;
+                    return a.nombre.localeCompare(b.nombre);
                     });
-                    
-                    cursosArray.forEach(item => {
-                        const div = document.createElement('div');
-                        div.className = 'course-checkbox';
-                        div.innerHTML = `
-                            <input type="checkbox" id="curso-${item.nombre}" value="${item.nombre}">
-                            <label for="curso-${item.nombre}">${item.nombre} (${item.nivel})</label>
-                        `;
-                        grid.appendChild(div);
+    
+                  cursosArray.forEach(item => {
+                   const div = document.createElement('div');
+                   div.className = 'course-checkbox';
+                   div.innerHTML = `
+                      <input type="checkbox" id="curso-${item.nombre}" value="${item.nombre}">
+                     <label for="curso-${item.nombre}">${item.nombre} (${item.nivel}) - ${item.creditos} créditos</label>
+                      `;
+                  grid.appendChild(div);
                     });
 
                     document.getElementById('coursesSelector').style.display = 'block';
-                    
+    
                     console.log(`Total de cursos cargados: ${cursosArray.length}`);
                 })
                 .catch(error => {
@@ -570,6 +571,14 @@
                         <div class="stat-item">
                             <div class="stat-value">${stats.cursos_pendientes}</div>
                             <div class="stat-label">Cursos Pendientes</div>
+                        </div>
+                        <div class="stat-item">
+                           <div class="stat-value">${stats.creditos_acumulados}</div>
+                           <div class="stat-label">Créditos Acumulados</div>
+                        </div>
+                        <div class="stat-item">
+                          <div class="stat-value">${stats.creditos_totales}</div>
+                          <div class="stat-label">Créditos Totales</div>
                         </div>
                     </div>
                 `;
