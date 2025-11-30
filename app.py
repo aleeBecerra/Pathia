@@ -302,39 +302,68 @@ def api_prerrequisitos(carrera, curso):
     try:
         cursos_carrera, _ = grafo_global.filtrar_por_carrera(carrera)
 
-        curso_key = None
+        # 1. Encontrar la KEY del curso objetivo
+        curso_objetivo_key = None
         info_curso = None
-
         for clave, info in cursos_carrera.items():
             if clave[0].lower() == curso.lower():
-                curso_key = clave
+                curso_objetivo_key = clave
                 info_curso = info
                 break
 
-        if not curso_key:
+        if not curso_objetivo_key:
             return jsonify({'error': 'Curso no encontrado en esta carrera'}), 404
 
-        raw_str = info_curso['prerrequisitos'].strip()
-        prerrequisitos_info = []
+        # --- INICIO DEL ALGORITMO BFS ---
+        # La cola guardará tuplas: (clave_curso, profundidad)
+        # Empezamos desde el curso objetivo con profundidad 0
+        cola = deque([ (curso_objetivo_key, 0) ]) 
+        
+        visitados = set([curso_objetivo_key])
+        prerrequisitos_info = [] 
 
-        if raw_str and raw_str.lower() != "ninguno":
-            lista_prereqs = [p.strip() for p in raw_str.split(',') if p.strip()]
+        # Bucle BFS
+        while cola:
+            actual_key, profundidad = cola.popleft() # <--- ESTO LO HACE BFS
+            
+            # Si ya llegamos a profundidad 1, NO seguimos buscando hijos de este nodo.
+            # Solo queremos la primera capa (los padres directos).
+            if profundidad >= 1:
+                continue 
 
-            for prereq_nombre in lista_prereqs:
-                prereq_key = (prereq_nombre, carrera)
+            info_actual = cursos_carrera.get(actual_key)
+            if info_actual:
+                raw_str = info_actual['prerrequisitos'].strip()
                 
-                datos_prereq = {
-                    'curso': prereq_nombre,
-                    'nivel': 'N/A'
-                }
+                if raw_str and raw_str.lower() != "ninguno":
+                    lista_vecinos = [p.strip() for p in raw_str.split(',') if p.strip()]
+                    
+                    for vecino_nombre in lista_vecinos:
+                        vecino_key = (vecino_nombre, carrera)
+                        
+                        # Si no lo hemos visitado, lo procesamos
+                        if vecino_key in cursos_carrera and vecino_key not in visitados:
+                            # 1. Agregamos a resultados
+                            info_vecino = cursos_carrera[vecino_key]
+                            prerrequisitos_info.append({
+                                'curso': vecino_nombre,
+                                'nivel': info_vecino['nivel'],
+                                'tipo': 'Prerrequisito Directo'
+                            })
+                            
+                            # 2. Marcamos visitado
+                            visitados.add(vecino_key)
+                            
+                            # 3. ENCOLAMOS (La parte clave del BFS)
+                            # Aumentamos la profundidad a 1. 
+                            # En la siguiente vuelta del while, como profundidad será 1, 
+                            # entrará al 'if profundidad >= 1: continue' y se detendrá.
+                            cola.append((vecino_key, profundidad + 1))
 
-                if prereq_key in cursos_carrera:
-                    datos_prereq['nivel'] = cursos_carrera[prereq_key]['nivel']
-                
-                prerrequisitos_info.append(datos_prereq)
+        # --- FIN DEL BFS ---
 
         return jsonify({
-            'curso': curso_key[0],
+            'curso': curso_objetivo_key[0],
             'tiene_prerrequisitos': len(prerrequisitos_info) > 0,
             'prerrequisitos': prerrequisitos_info,
             'total': len(prerrequisitos_info),
@@ -342,7 +371,7 @@ def api_prerrequisitos(carrera, curso):
         })
 
     except Exception as e:
-        print(f"Error en api_prerrequisitos: {e}")
+        print(f"Error: {e}")
         return jsonify({'error': str(e)}), 500
 
 

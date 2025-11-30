@@ -146,6 +146,9 @@
             padding: 20px;
             border-radius: 10px;
             transition: transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .prereq-item:hover {
@@ -161,6 +164,13 @@
         .prereq-level {
             font-size: 14px;
             opacity: 0.9;
+        }
+        
+        .prereq-type {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            font-size: 13px;
         }
 
         .no-results {
@@ -308,7 +318,7 @@
     <div class="container">
         <a href="/?skip=1" class="back-btn">← Volver al inicio</a>
 
-        <h1 class="title">Consulta de Prerrequisitos</h1>
+        <h1 class="title">Consulta de Prerrequisitos (BFS)</h1>
 
         <div class="controls">
             <div class="control-group">
@@ -331,7 +341,7 @@
         <div class="results" id="resultados">
             <div class="info-box">
                 <strong>¿Cómo funciona?</strong>
-                <p>Selecciona tu carrera y un curso. Te mostraremos todos los cursos que necesitas aprobar antes de poder llevar el curso seleccionado.</p>
+                <p>Seleccione una carrera y un curso. Te mostraremos todos los prerrequisitos que necesitas aprobar para llevar el curso ingresado</p>
             </div>
         </div>
     </div>
@@ -388,7 +398,7 @@
                 return;
             }
 
-            resultados.innerHTML = '<div class="loading">Buscando prerrequisitos...</div>';
+            resultados.innerHTML = '<div class="loading">Recorriendo grafo con BFS...</div>';
 
             fetch(`/api/prerrequisitos/${encodeURIComponent(carrera)}/${encodeURIComponent(curso)}`)
                 .then(response => response.json())
@@ -398,7 +408,7 @@
                         return;
                     }
 
-                    let html = '<h2>Resultados</h2>';
+                    let html = '<h2>Prerrequisitos Inmediatos</h2>';
                     
                     // Banner con información del curso
                     html += `
@@ -416,24 +426,42 @@
                         
                         html += `
                             <div class="no-prereqs">
-                                <h3>✓ Sin Prerrequisitos de Cursos</h3>
-                                <p>Este curso NO requiere haber aprobado cursos específicos previamente.</p>
+                                <h3>✓ Sin Prerrequisitos Previos</h3>
+                                <p>Este curso no requiere aprobar cursos anteriores inmediatos.</p>
                                 ${mensajeExtra}
                             </div>
                         `;
                     } else {
                         html += `
                             <div style="margin-bottom: 15px;">
-                                <strong style="font-size: 18px;">Necesitas aprobar ${data.total} curso${data.total !== 1 ? 's' : ''} antes:</strong>
+                                <strong style="font-size: 18px;">Necesitas aprobar ${data.total} curso${data.total !== 1 ? 's' : ''} para desbloquear esta asignatura:</strong>
                             </div>
                             <div class="prereq-list">
                         `;
 
                         data.prerrequisitos.forEach(prereq => {
+                            // Lógica visual para resaltar que son directos
+                            // Como ahora solo mostramos directos, siempre será dorado.
+                            let estiloTipo = '';
+                            let icono = '';
+                            
+                            if (prereq.tipo === 'Prerrequisito Directo') {
+                                estiloTipo = 'color: #ffca28; font-weight: bold;'; // Dorado
+                                icono = '★ ';
+                            } else {
+                                estiloTipo = 'color: #ccc; font-style: italic;'; // Gris (Backup)
+                                icono = '• ';
+                            }
+
                             html += `
                                 <div class="prereq-item">
-                                    <div class="prereq-name">${prereq.curso}</div>
-                                    <div class="prereq-level">${prereq.nivel}</div>
+                                    <div>
+                                        <div class="prereq-name">${prereq.curso}</div>
+                                        <div class="prereq-level">${prereq.nivel}</div>
+                                    </div>
+                                    <div class="prereq-type" style="${estiloTipo}">
+                                        ${icono}${prereq.tipo || 'Prerrequisito'}
+                                    </div>
                                 </div>
                             `;
                         });
