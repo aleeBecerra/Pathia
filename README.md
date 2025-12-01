@@ -25,6 +25,8 @@ python app.py
 
 3. Abrir en el navegador: http://127.0.0.1:5000
 
+## Despliegue
+Link de aplicación desplegada: https://pathia-ciyd.onrender.com
 ## Formato del Data Set
 
 ```csv
